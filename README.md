@@ -52,6 +52,7 @@ Our goals are to:
 ---
 
 ## Transformed Dataset
+**Team Member**: Bophine
 
 The raw GBD 2013 dataset was processed through a structured **ETL (Extract, Transform, Load) pipeline** to generate a cleaned, Kenya-relevant analytical dataset.
 
@@ -100,6 +101,49 @@ Key steps performed:
 - Script: `1_extract_transform.ipynb`
 - Workflow: Load → Filter → Clean → Enrich → Export
 
+---
+
+## Insights & Storytelling
+**Team Member**: Tumaini
+
+### Overview
+- This repository contains the Insights & Storytelling Notebook to analyze and visualize health services and disease burden data for Kenya, with a focus on HIV/AIDS and Tuberculosis (TB) from 2000–2013. The analysis leverages modeled estimates of mortality and uncertainty data from the Global Burden of Disease Study 2013, processed and cleaned for interactive exploration.
+
+Built using Python and data visualization best practices, this notebook offers actionable insights for public health professionals, policymakers, and data analysts.
+
+## Summary of Key Insights
+### 1. Disease Burden Trends
+- Overall, **HIV/AIDS** and **Tuberculosis (TB)** show significant mortality in Kenya from 2000 to 2013.
+- HIV/AIDS deaths peaked around the mid-2000s, while TB shows more steady trends but also notable peaks.
+
+### 2. Deaths Over Time by Disease
+- **HIV/AIDS** remains the leading cause of death among the two diseases.
+- **Tuberculosis** shows consistent but slightly lower death counts compared to HIV/AIDS.
+
+### 3. Sex Differences (HIV/AIDS Deaths)
+- For HIV/AIDS, **female deaths are slightly lower than male deaths**, with medians of ~752 (females) vs ~706 (males), but females show a wider range of extremes (~3051 vs ~3042 max).
+- Both sexes combined reflect overall population burden, highlighting that public health strategies should address both male and female populations.
+
+### 4. Age Group Vulnerabilities
+- In 2010, heatmaps indicate **specific age groups** carry higher mortality for each disease.
+- Typically, **older age groups and young adults** tend to exhibit higher death counts, consistent with HIV/AIDS burden among sexually active populations.
+
+## Policy Implications
+
+- Target **HIV/AIDS interventions** to high-burden age groups and both sexes.
+- Maintain and scale **TB control programs**, especially in years/age groups with rising mortality.
+- Use uncertainty metrics to prioritize data collection and refine surveillance systems.
+- Public health strategies must continue monitoring trends to adapt interventions to shifts in disease burden.
+
+---
+
+## Limitations
+
+- Data only covers 2000–2013.
+- Only includes model-estimated deaths; raw incidence or prevalence data may differ.
+- Incidence data is missing in this dataset, limiting insights into new infections or transmission rates.
+
+---
 
 ## Expected Outputs by Team Role
 ### Mitchelle:
