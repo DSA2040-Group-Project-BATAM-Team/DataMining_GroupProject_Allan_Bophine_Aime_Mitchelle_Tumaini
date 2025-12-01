@@ -241,6 +241,7 @@ Unique items: 31
 - 6 strong association rules met confidence threshold
 
 **Top Association Rules (by Lift)**
+
 IF Rate_Medium → THEN Tuberculosis  
   Support: 0.199 | Confidence: 0.619 | Lift: 1.14
 
