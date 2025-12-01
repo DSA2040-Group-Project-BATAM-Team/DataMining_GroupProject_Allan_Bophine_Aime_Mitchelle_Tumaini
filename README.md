@@ -52,6 +52,7 @@ Our goals are to:
 ---
 
 ## Transformed Dataset
+**Team Member**: Bophine
 
 The raw GBD 2013 dataset was processed through a structured **ETL (Extract, Transform, Load) pipeline** to generate a cleaned, Kenya-relevant analytical dataset.
 
@@ -100,6 +101,163 @@ Key steps performed:
 - Script: `1_extract_transform.ipynb`
 - Workflow: Load → Filter → Clean → Enrich → Export
 
+---
+
+## Insights & Storytelling
+**Team Member**: Tumaini
+
+### Overview
+- This repository contains the Insights & Storytelling Notebook to analyze and visualize health services and disease burden data for Kenya, with a focus on HIV/AIDS and Tuberculosis (TB) from 2000–2013. The analysis leverages modeled estimates of mortality and uncertainty data from the Global Burden of Disease Study 2013, processed and cleaned for interactive exploration.
+
+Built using Python and data visualization best practices, this notebook offers actionable insights for public health professionals, policymakers, and data analysts.
+
+**How to Run the Analysis Code**:
+- To reproduce the insights and visualizations from the Kenya health data analysis, follow the instructions below. The analysis uses Python with common data science libraries.
+
+**Prerequisites**:
+Ensure you have the following installed:
+
+Python 3.8 or higher
+Required libraries: pandas, numpy, matplotlib, seaborn, and openpyxl (for Excel file reading)
+You can install them via pip:
+```bash
+pip install pandas numpy matplotlib seaborn openpyxl
+```
+**Step 1: Prepare the Data**
+
+Make sure the cleaned dataset is saved as Group_work_cleaned.xlsx in your working directory. The file should contain a sheet with the following columns:
+
+- `location_name`
+- `year`
+- `age_group_name`
+- `sex_name`
+- `cause_name`
+- `metric` (e.g., "Deaths", "Incidence", "Prevalence")
+- `mean`, `lower`, `upper`, `upper_deviation_pct`
+
+**Step 2: Run the Analysis Script**
+
+Copy and run the following Python code in a ipynb script:
+```python
+# Import libraries 
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+sns.set(style="whitegrid")
+plt.rcParams["figure.figsize"] = (12, 6)
+
+print("Libraries loaded successfully.")
+
+# Load the cleaned dataset
+df = pd.read_excel("Group_work_cleaned.xlsx")
+
+# Filter only Kenya
+df_kenya = df[df['location_name'].str.lower() == 'kenya']
+print("Full dataset rows:", len(df))
+print("Kenya dataset rows:", len(df_kenya))
+
+# Quick summary
+df_kenya.info()
+
+# Insight 1: Disease Death Trends Over Time
+metric_to_plot = 'Deaths'
+subset = df_kenya[df_kenya['metric'] == metric_to_plot]
+
+plt.figure(figsize=(12,6))
+sns.lineplot(data=subset, x='year', y='mean', hue='cause_name', marker='o')
+plt.title(f"{metric_to_plot} Trends in Kenya (2000–2013)")
+plt.xlabel("Year")
+plt.ylabel(f"Mean {metric_to_plot}")
+plt.legend(title="Disease")
+plt.show()
+
+print(subset.groupby('cause_name')['mean'].describe())
+
+# Insight 2: Sex Differences in HIV/AIDS Deaths
+hiv_deaths = df_kenya[
+    (df_kenya['cause_name'] == 'HIV/AIDS') &
+    (df_kenya['metric'] == 'Deaths')
+]
+
+sns.lineplot(data=hiv_deaths, x='year', y='mean', hue='sex_name', marker='o')
+plt.title("HIV/AIDS Deaths by Sex (2000–2013)")
+plt.xlabel("Year")
+plt.ylabel("Mean HIV/AIDS Deaths")
+plt.show()
+
+print(hiv_deaths.groupby('sex_name')['mean'].describe())
+
+# Insight 3: Age Group Heatmap (Year 2010)
+year = 2010
+subset = df_kenya[
+    (df_kenya['year'] == year) &
+    (df_kenya['metric'] == 'Deaths')
+]
+
+if subset.empty:
+    print(f"No data available for year {year} and metric 'Deaths'.")
+else:
+    pivot = subset.pivot_table(
+        index='age_group_name',
+        columns='cause_name',
+        values='mean',
+        aggfunc='mean'
+    )
+    plt.figure(figsize=(10, 12))
+    sns.heatmap(pivot, annot=True, fmt=".1f", cmap="coolwarm")
+    plt.title(f"Deaths Heatmap by Age Group & Disease ({year})")
+    plt.show()
+
+
+# Insight 4: Uncertainty Analysis
+  
+unc = df_kenya[['cause_name', 'year', 'upper_deviation_pct']]
+
+sns.lineplot(data=unc, x='year', y='upper_deviation_pct', hue='cause_name', marker='o')
+plt.title("Uncertainty (%) Over Time by Disease")
+plt.xlabel("Year")
+plt.ylabel("Upper Deviation (%)")
+plt.show()
+
+print(unc.groupby('cause_name')['upper_deviation_pct'].describe())
+```
+  
+
+## Summary of Key Insights
+### 1. Disease Burden Trends
+- Overall, **HIV/AIDS** and **Tuberculosis (TB)** show significant mortality in Kenya from 2000 to 2013.
+- HIV/AIDS deaths peaked around the mid-2000s, while TB shows more steady trends but also notable peaks.
+
+### 2. Deaths Over Time by Disease
+- **HIV/AIDS** remains the leading cause of death among the two diseases.
+- **Tuberculosis** shows consistent but slightly lower death counts compared to HIV/AIDS.
+
+### 3. Sex Differences (HIV/AIDS Deaths)
+- For HIV/AIDS, **female deaths are slightly lower than male deaths**, with medians of ~752 (females) vs ~706 (males), but females show a wider range of extremes (~3051 vs ~3042 max).
+- Both sexes combined reflect overall population burden, highlighting that public health strategies should address both male and female populations.
+
+### 4. Age Group Vulnerabilities
+- In 2010, heatmaps indicate **specific age groups** carry higher mortality for each disease.
+- Typically, **older age groups and young adults** tend to exhibit higher death counts, consistent with HIV/AIDS burden among sexually active populations.
+
+## Policy Implications
+
+- Target **HIV/AIDS interventions** to high-burden age groups and both sexes.
+- Maintain and scale **TB control programs**, especially in years/age groups with rising mortality.
+- Use uncertainty metrics to prioritize data collection and refine surveillance systems.
+- Public health strategies must continue monitoring trends to adapt interventions to shifts in disease burden.
+
+---
+
+## Limitations
+
+- Data only covers 2000–2013.
+- Only includes model-estimated deaths; raw incidence or prevalence data may differ.
+- Incidence data is missing in this dataset, limiting insights into new infections or transmission rates.
+
+---
 
 ## Expected Outputs by Team Role
 ### Mitchelle:
