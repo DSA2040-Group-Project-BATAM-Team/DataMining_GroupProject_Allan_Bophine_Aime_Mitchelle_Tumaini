@@ -102,7 +102,168 @@ Key steps performed:
 - Workflow: Load → Filter → Clean → Enrich → Export
 
 ---
+##  Data Mining
+**Team Member**: Aime
 
+###  Dataset Overview
+
+The dataset contains global health metrics for Tuberculosis and HIV/AIDS from 2000 to 2013.
+
+| Column Name             | Description |
+|------------------------|-------------|
+| `location_id`          | Unique numeric identifier for each country or region |
+| `location_name`        | Name of the country or region |
+| `year`                 | Year of data collection (2000–2013) |
+| `age_group_id`         | Numeric code for age group |
+| `age_group_name`       | Label for age group (e.g., "Age-standardized") |
+| `sex_id`               | Numeric code for sex category |
+| `sex_name`             | Sex category: "Males", "Females", or "Both sexes" |
+| `cause_name`           | Disease cause: "Tuberculosis" or "HIV/AIDS" |
+| `metric`               | Type of health metric: "Deaths" or "Prevalence" |
+| `unit`                 | Unit of measurement: "Rate per 100,000" |
+| `mean`                 | Estimated central value of the metric |
+| `lower`                | Lower bound of the 95% uncertainty interval |
+| `upper`                | Upper bound of the 95% uncertainty interval |
+| `upper_deviation_pct`  | Percent deviation from mean to upper bound |
+
+> **Note**: The analysis focuses primarily on **death rates** (metric = "Deaths") with **age-standardized** values for fair cross-population comparison.
+
+---
+
+##  Setup & Dependencies
+
+### Required Python Libraries
+- `pandas` – Data manipulation
+- `numpy` – Numerical operations
+- `matplotlib`, `seaborn` – Visualization
+- `scikit-learn` – Clustering and classification
+- `mlxtend` – Association rule mining
+- `warnings` – Suppress non-critical alerts
+
+### Installation
+Run the following in your terminal or notebook environment:
+```bash
+pip install pandas numpy matplotlib seaborn scikit-learn mlxtend
+```
+
+ ## Methodology Breakdown
+ ### Data Preparation
+- Filter data into Deaths (63,742 records) and Prevalence (14,822 records)
+- Create an **aggregated location-level dataset** by grouping on `location_id` and cause_name
+- Compute average rates (`avg_mean`), uncertainty bounds, and record counts
+- Pivot the data to create separate columns for TB and HIV/AIDS metrics per location
+- Handle missing values by imputing 0 (indicating no reported cases/data)
+
+Result: **49 locations** with numeric features suitable for clustering.
+
+## Technique 1: K-Means Clustering
+**Goal**: Discover natural groupings of countries based on disease burden profiles.
+
+### Features Used
+- 'avg_mean_HIV/AIDS', 'avg_mean_Tuberculosis'
+- 'avg_upper_HIV/AIDS', 'avg_upper_Tuberculosis'
+- 'record_count_HIV/AIDS', 'record_count_Tuberculosis'
+  
+### Workflow
+1. Standardize all numeric features using StandardScaler
+2. Evaluate cluster quality using:
+- Elbow Method (inertia vs. k)
+- Silhouette Score (cohesion vs. separation)
+3. Select optimal k = 4 (highest silhouette score)
+4. Fit KMeans(n_clusters=4) and assign cluster labels
+5. Analyze and interpret each cluster
+
+| Cluster | Average HIV Mean | Average TB Mean | Sample Countries |
+|---------|------------------|-----------------|------------------|
+| **0** | 1036.48 | 789.26 | Ethiopia, Kenya, South Africa, Zimbabwe |
+| **1** | 360.86 | 254.76 | Algeria, Egypt, Angola, Morocco |
+| **2** | 118.34 | 53.51 | Global, Libya, Tunisia, Seychelles |
+| **3** | 346.74 | 337.04 | Sudan, South Sudan |
+
+> **Insight**: Cluster 0 represents the high dual-burden region (Sub-Saharan Africa), while Cluster 2 includes low-burden or global aggregate entries.
+
+### Visualization
+- Scatter plot of TB vs. HIV mean rates, colored by cluster
+- Clear separation between high, medium, and low burden regions
+
+## Technique 2: Decision Tree Classification
+**Goal**: Predict whether a location belongs to the high disease burden group and identify decisive factors.
+
+### Target Variable Construction
+- Compute overall `avg_death_rate` per location (age-standardized deaths/100k)
+- Define **high burden** as values above the **75th percentile** (~182.39)
+- Result: **12 high-burden**, **37 low-burden** locations
+  
+### Features
+- `tb_death_rate`: Avg TB death rate
+- `hiv_death_rate`: Avg HIV/AIDS death rate
+- `uncertainty_range`: avg_upper_bound – avg_lower_bound
+- `num_records`: Data completeness proxy
+  
+### Model Configuration
+- `DecisionTreeClassifier(max_depth=4, min_samples_split=10, min_samples_leaf=5)`
+- Stratified 70/30 train-test split
+
+### Performance
+- **Test Accuracy: 100%** (due to small, well-separated classes)
+- **Classification Report**: Perfect precision, recall, and F1 for both classes
+
+| Feature | Importance |
+|---------|------------------|
+| `hiv_death_rate` | 1.00 | 
+| All Others | 0.00 | 
+> **Key Insight**: HIV/AIDS mortality **alone** is sufficient to distinguish high-burden locations — TB rates do not provide additional discriminative power in this context.
+
+### Visualization
+- Bar plot of feature importance
+- Full decision tree diagram showing splits based exclusively on `hiv_death_rate`
+
+## Technique 3: Association Rule Mining (Apriori)
+**Goal**: Uncover frequent co-occurrences among disease, demographic, and temporal attributes.
+
+### Transaction Construction
+Each death record is converted into a market basket of categorical items:
+
+- Disease: Tuberculosis or HIV_AIDS
+- Sex: Sex_Males, Sex_Females, Sex_Both sexes
+- Age: Age_Age-standardized
+- Rate Category: Rate_Very_Low, Rate_Low, Rate_Medium, Rate_High (based on mean bins)
+- Time Period: Period_2000-2005, Period_2006-2010, Period_2011-2013
+Total transactions: 63,742
+Unique items: 31
+
+### Algorithm Settings
+- min_support = 0.05 → rules must appear in ≥5% of transactions
+- min_confidence = 0.6 → rules must be ≥60% reliable
+
+### Key Results
+- 105 frequent itemsets found
+- 6 strong association rules met confidence threshold
+
+**Top Association Rules (by Lift)**
+IF Rate_Medium → THEN Tuberculosis  
+  Support: 0.199 | Confidence: 0.619 | Lift: 1.14
+
+IF Sex_Males, Rate_Medium → THEN Tuberculosis  
+  Support: 0.073 | Confidence: 0.633 | Lift: 1.16
+
+IF Period_2000-2005, Rate_Medium → THEN Tuberculosis  
+  Support: 0.087 | Confidence: 0.630 | Lift: 1.16
+> **Interpretation**: Tuberculosis is strongly associated with medium mortality rates, particularly among males and in the early 2000s. No strong rules linked HIV/AIDS to specific demographic or temporal patterns, suggesting its burden is more uniformly distributed or extreme (high/low only).
+
+### Visualization
+- Scatter plots of **Support vs. Confidence** and **Support vs. Lift**
+- Color gradients show rule strength and reliability
+
+## Key Insights Summary
+1. **Epidemiological Clusters Exist**: Countries naturally group into distinct burden profiles — especially a high dual-burden cluster in Sub-Saharan Africa.
+2. **HIV Drives High Burden Classification**: In this dataset, HIV/AIDS mortality is the sole predictor of whether a location is classified as "high burden."
+3. **TB Shows Endemic Patterns**: Tuberculosis consistently appears in medium-rate contexts across genders and time periods, indicating persistent transmission even without epidemic-level spikes.
+4. **Data Completeness Varies**: Record counts differ widely by country and disease, which was accounted for in feature engineering.
+
+
+
+---
 ## Insights & Storytelling
 **Team Member**: Tumaini
 
