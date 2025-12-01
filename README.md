@@ -71,7 +71,7 @@ Key steps performed:
 - **Outlier removal**: Trimmed to **1st–99th percentiles**  
 - **Noise cleaning**: Removed negative or non-physical values  
 - **Feature engineering**: Added `upper_deviation_pct = ((upper – mean) / mean) × 100`  
-- **Standardization**: Cleaned text casing, ensured integer years
+- **Standardization**: Cleaned text casing, ensured integer years.
 
 ### 💾 Load
 - Final cleaned dataset: **78,651 rows**
@@ -93,7 +93,7 @@ Key steps performed:
 
 ## 🔧 ETL Pipeline Implementation
 
-- **Environment**: Python 3.13  
+- **Environment**: Python 3.13. 
 - **Key Libraries**: `pandas`, `openpyxl`, `numpy`  
 - **Dependencies Installed**:
   ```bash
