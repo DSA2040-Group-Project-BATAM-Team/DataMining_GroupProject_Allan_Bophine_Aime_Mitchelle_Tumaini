@@ -107,43 +107,118 @@ Key steps performed:
 
 ---
 
-## Overview  
+## Overview
 
-This project repo performs a comprehensive **Exploratory Data Analysis (EDA)** on a public health-related dataset titled `Group_work_cleaned.xlsx`. The analysis focuses on understanding the distribution, relationships, and uncertainty in key health metrics—particularly **Deaths** and **Prevalence**—associated with diseases such as **HIV/AIDS** and **Tuberculosis** across various demographics (age, sex), geographies (e.g., South Africa and other African nations), and time (years).
-
-The goal is to:
-- Load and validate data integrity
-- Assess correlations among numerical variables
-- Explore data distributions and identify skewness/kurtosis
-- Visualize uncertainty in estimates
-- Investigate disease patterns by age, sex, and location
-
-All analysis is implemented using Python with core data science libraries.
+This repository contains exploratory data analysis performed on a cleaned, IHME-derived dataset (`Group_work_cleaned.xlsx`) focusing on HIV/AIDS, Tuberculosis, and Malaria metrics for Kenya and other countries for 2000–2013. The purpose is to describe the data handling and EDA steps implemented in Python (Pandas / NumPy) and visualized with Matplotlib/Seaborn.
 
 ---
 
-## Tools & Libraries Used  
+## Purpose & scope
 
-| Library       | Purpose |
-|---------------|--------|
-| `pandas`      | Data loading, cleaning, transformation, and manipulation |
-| `numpy`       | Numerical operations and array handling |
-| `matplotlib`  | Basic plotting and figure customization |
-| `seaborn`     | Advanced statistical visualizations (heatmaps, violin plots, KDEs, etc.) |
-| `openpyxl`    | Reading `.xlsx` Excel files |
-| `tabulate`    | Formatted table printing (installed but not actively used) |
+- Provide a structured, reproducible EDA to inspect measurement variables (`mean`, `lower`, `upper`) and derived uncertainty metrics.
+- Identify relationships (correlations), distribution shapes (skewness, kurtosis), and group-wise differences by disease, age group, sex, and location.
+- Generate plots and summary statistics to guide follow-up modeling or policy-oriented storytelling.
 
->  **Note**: Package installation commands (`!pip install`) confirm `openpyxl` and `tabulate` are available for file I/O and output formatting.
+This README focuses on the EDA code and interpretations you can reproduce locally or in a Jupyter notebook.
 
 ---
 
-## Data Loading & Initial Inspection  
+## Student role & contributions
 
-```python
-df = pd.read_excel("C:/Users/USER/Downloads/Group_work_cleaned.xlsx")
-df.head()
+- Data handling: load, clean minimal transformations for analysis, compute uncertainty metrics.
+- Visualizations: boxplots, violinplots, KDE/ridge plots, heatmaps.
+- Basic interpretation and reporting of observed statistical properties (correlation, skewness, kurtosis).
+- Prepared saved visual outputs to accompany the notebook.
+
+---
+
+## Environment & dependencies
+
+- Python: 3.8+ (analysis originally run on Python 3.12/3.13 environments)
+- Key packages:
+  - pandas
+  - numpy
+  - matplotlib
+  - seaborn
+  - openpyxl (reading .xlsx)
+  - tabulate (optional — pretty console tables)
+
+Install with pip if missing:
+```bash
+pip install pandas numpy matplotlib seaborn openpyxl tabulate
 ```
 
+If your environment does not allow global installs, use --user or a virtual environment:
+```bash
+pip install --user pandas numpy matplotlib seaborn openpyxl tabulate
+# or
+python -m venv venv
+source venv/bin/activate  # Unix / macOS
+venv\Scripts\activate     # Windows
+pip install pandas numpy matplotlib seaborn openpyxl tabulate
+```
+
+---
+
+## Files in this repo (relevant)
+
+- Group_work_cleaned.xlsx — cleaned dataset produced by ETL (78,651 rows; columns documented below).
+- Jupyter notebooks (in repo): notebooks performing ETL, EDA, modeling (refer to file list in repo).
+- README.md (this file): detailed EDA instructions and interpretation.
+
+Key columns in the cleaned dataset:
+- location_id, location_name, year
+- age_group_id, age_group_name
+- sex_id, sex_name
+- cause_name (e.g., "HIV/AIDS", "Tuberculosis", "Malaria")
+- metric (e.g., "Deaths", "Prevalence", "Incidence")
+- unit (e.g., "Rate per 100,000", "Number")
+- mean, lower, upper
+- upper_deviation_pct (derived)
+- Uncertainty_Range (upper - lower) — computed in EDA
+- Uncertainty_Percent — computed in EDA
+
+---
+
+## Data source & citation
+
+Primary source (original dataset basis):  
+Global Burden of Disease Collaborative Network. Global Burden of Disease Study 2013 (GBD 2013) — HIV, Tuberculosis, and Malaria Incidence, Prevalence, and Mortality 1990–2013. Seattle, United States: Institute for Health Metrics and Evaluation (IHME). DOI: https://doi.org/10.6069/ZHGK-7F54
+
+Data license: IHME Free-of-Charge Non-Commercial User Agreement — confirm permitted use before redistribution.
+
+---
+
+## How to run
+
+1. Place `Group_work_cleaned.xlsx` in your working directory (or update the path in the code).
+2. Open a terminal / command prompt and start Jupyter Notebook / JupyterLab, or run the following script in a Python environment.
+
+Minimal reproducible workflow in a Jupyter cell:
+
+```python
+# Data handling & visualization imports
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# If running interactively and missing packages:
+# !pip install openpyxl tabulate
+
+import openpyxl
+from tabulate import tabulate  # optional, for pretty printing tables
+
+sns.set(style="whitegrid")
+plt.rcParams["figure.figsize"] = (12, 6)
+
+# Load the cleaned dataset (update path as needed)
+df = pd.read_excel("C:/Users/USER/Downloads/Group_work_cleaned.xlsx")
+
+# Quick checks
+print("Rows, cols:", df.shape)
+df.head()
+```
 
 
 ---
