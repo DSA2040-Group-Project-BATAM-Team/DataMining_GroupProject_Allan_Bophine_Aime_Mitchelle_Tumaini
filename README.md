@@ -103,7 +103,7 @@ Key steps performed:
 
 ---
 ## Exploratory Data Analysis (EDA) Report  
-**Student Name:** Mitchelle Moraa  
+**Team Member:** Mitchelle Moraa  
 
 ## Overview
 
@@ -322,7 +322,7 @@ df.to_csv("data/processed_dataset.csv", index=False)
 
 Appendix: useful code snippets
 ------------------------------
-Read Excel (example):
+Read Excel:
 ```python
 import pandas as pd
 df = pd.read_excel("data/Group_work_cleaned.xlsx", engine='openpyxl')
