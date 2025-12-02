@@ -105,13 +105,9 @@ Key steps performed:
 ## Exploratory Data Analysis (EDA) Report  
 **Student Name:** Mitchelle Moraa  
 
----
-
 ## Overview
 
 This repository contains exploratory data analysis performed on a cleaned, IHME-derived dataset (`Group_work_cleaned.xlsx`) focusing on HIV/AIDS, Tuberculosis, and Malaria metrics for Kenya and other countries for 2000–2013. The purpose is to describe the data handling and EDA steps implemented in Python (Pandas / NumPy) and visualized with Matplotlib/Seaborn.
-
----
 
 ## Purpose & scope
 
@@ -119,66 +115,12 @@ This repository contains exploratory data analysis performed on a cleaned, IHME-
 - Identify relationships (correlations), distribution shapes (skewness, kurtosis), and group-wise differences by disease, age group, sex, and location.
 - Generate plots and summary statistics to guide follow-up modeling or policy-oriented storytelling.
 
-This README focuses on the EDA code and interpretations you can reproduce locally or in a Jupyter notebook.
-
----
-
 ## Student role & contributions
 
 - Data handling: load, clean minimal transformations for analysis, compute uncertainty metrics.
 - Visualizations: boxplots, violinplots, KDE/ridge plots, heatmaps.
 - Basic interpretation and reporting of observed statistical properties (correlation, skewness, kurtosis).
 - Prepared saved visual outputs to accompany the notebook.
-
----
-
-## Environment & dependencies
-
-- Python: 3.8+ (analysis originally run on Python 3.12/3.13 environments)
-- Key packages:
-  - pandas
-  - numpy
-  - matplotlib
-  - seaborn
-  - openpyxl (reading .xlsx)
-  - tabulate (optional — pretty console tables)
-
-Install with pip if missing:
-```bash
-pip install pandas numpy matplotlib seaborn openpyxl tabulate
-```
-
-If your environment does not allow global installs, use --user or a virtual environment:
-```bash
-pip install --user pandas numpy matplotlib seaborn openpyxl tabulate
-# or
-python -m venv venv
-source venv/bin/activate  # Unix / macOS
-venv\Scripts\activate     # Windows
-pip install pandas numpy matplotlib seaborn openpyxl tabulate
-```
-
----
-
-## Files in this repo (relevant)
-
-- Group_work_cleaned.xlsx — cleaned dataset produced by ETL (78,651 rows; columns documented below).
-- Jupyter notebooks (in repo): notebooks performing ETL, EDA, modeling (refer to file list in repo).
-- README.md (this file): detailed EDA instructions and interpretation.
-
-Key columns in the cleaned dataset:
-- location_id, location_name, year
-- age_group_id, age_group_name
-- sex_id, sex_name
-- cause_name (e.g., "HIV/AIDS", "Tuberculosis", "Malaria")
-- metric (e.g., "Deaths", "Prevalence", "Incidence")
-- unit (e.g., "Rate per 100,000", "Number")
-- mean, lower, upper
-- upper_deviation_pct (derived)
-- Uncertainty_Range (upper - lower) — computed in EDA
-- Uncertainty_Percent — computed in EDA
-
----
 
 ## Data source & citation
 
@@ -189,38 +131,263 @@ Data license: IHME Free-of-Charge Non-Commercial User Agreement — confirm perm
 
 ---
 
-## How to run
+Detailed walkthrough (cell-by-cell explanation)
+----------------------------------------------
 
-1. Place `Group_work_cleaned.xlsx` in your working directory (or update the path in the code).
-2. Open a terminal / command prompt and start Jupyter Notebook / JupyterLab, or run the following script in a Python environment.
-
-Minimal reproducible workflow in a Jupyter cell:
-
+1) Setup and imports
+--------------------
+The notebook begins by importing essential libraries:
 ```python
-# Data handling & visualization imports
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-# If running interactively and missing packages:
-# !pip install openpyxl tabulate
-
+!pip install openpyxl
 import openpyxl
-from tabulate import tabulate  # optional, for pretty printing tables
+!pip install tabulate
+import tabulate
+```
+- The notebook installs openpyxl and tabulate using pip inside the notebook. If you use a pre-configured environment, you can omit these pip install lines.
+- Matplotlib & Seaborn are used for plotting.
 
-sns.set(style="whitegrid")
-plt.rcParams["figure.figsize"] = (12, 6)
-
-# Load the cleaned dataset (update path as needed)
+2) Read and display the data
+----------------------------
+The notebook reads from an Excel file:
+```python
 df = pd.read_excel("C:/Users/USER/Downloads/Group_work_cleaned.xlsx")
-
-# Quick checks
-print("Rows, cols:", df.shape)
 df.head()
 ```
+- Replace the path with your local path or a repo-relative path.
+- df.head() prints the first rows to verify columns and types.
 
+3) Correlation exploratory data analysis
+----------------------------------------
+The notebook computes correlations among three related numeric columns: mean, lower, upper.
 
+Code:
+```python
+corr = df[["mean", "lower", "upper"]].corr()
+plt.figure(figsize=(6,5))
+sns.heatmap(corr, annot=True, cmap="coolwarm", vmin=-1, vmax=1)
+plt.title("Correlogram")
+plt.show()
+```
+
+Interpretation in notebook:
+- mean vs lower ≈ 0.98: Very strong positive correlation.
+- mean vs upper ≈ 0.98: Very strong positive correlation.
+- lower vs upper ≈ 0.93: Strong positive correlation.
+- Conclusion: high multicollinearity — mean, lower, and upper convey highly overlapping information. If building models, include only one representative variable (or use transformations/PCA/regularization).
+
+4) Pivot and metric-level correlation (Deaths vs Prevalence)
+------------------------------------------------------------
+This cell reshapes the dataset to have metrics as columns (Deaths, Prevalence) and computes correlation between them:
+```python
+pivot = df.pivot_table(
+    index=["location_name","year","age_group_name","sex_name","cause_name"],
+    columns="metric",
+    values="mean"
+).reset_index()
+corr = pivot[["Deaths", "Prevalence"]].corr()
+print(corr)
+```
+- The printed correlation matrix showed approximately 0.335 between Deaths and Prevalence.
+- Interpretation: weak-to-moderate positive correlation — prevalence alone is a limited predictor of deaths; other confounders matter.
+
+Important note: pivot_table will result in missing values if both metric columns aren't present for a given index. Drop or handle NaNs before computing correlations if necessary:
+```python
+pivot_clean = pivot.dropna(subset=["Deaths","Prevalence"])
+```
+
+5) Full numeric correlation heatmap
+-----------------------------------
+The notebook computes correlations across all numeric columns:
+```python
+corr = df.corr(numeric_only=True)
+plt.figure(figsize=(12,8))
+sns.heatmap(corr, annot=True, cmap='coolwarm')
+plt.title("Correlation Heatmap")
+plt.show()
+```
+- The notebook notes generally near-zero correlations for demographic/time identifiers vs core measurement variables, and a weak negative relationship for upper_deviation_pct with mean/lower/upper.
+
+6) Distributions EDA (boxplots & violins per numeric variable)
+--------------------------------------------------------------
+The notebook selects numeric columns and plots boxplots and violin plots for each:
+```python
+num_cols = df.select_dtypes(include='number').columns
+for col in num_cols:
+    fig, ax = plt.subplots(1, 2, figsize=(12,4))
+    sns.boxplot(x=df[col], ax=ax[0])
+    ax[0].set_title(f"Boxplot: {col}")
+    sns.violinplot(x=df[col], ax=ax[1])
+    ax[1].set_title(f"Violin: {col}")
+    plt.tight_layout()
+    plt.show()
+```
+- This helps identify outliers, spread, and multimodality.
+- Result: mean, lower, upper, and upper_deviation_pct are highly skewed (long positive tail).
+
+7) Skewness and kurtosis calculations
+-------------------------------------
+The notebook computes skewness and kurtosis for numeric columns:
+```python
+df[num_cols].skew()
+df[num_cols].kurt()
+```
+- Example output (from the notebook):
+  - Skew:
+    - location_id 3.63
+    - mean 2.24, lower 2.44, upper 2.17, upper_deviation_pct 4.39
+  - Kurtosis:
+    - mean 4.84, lower 6.02, upper 4.48, upper_deviation_pct 23.03
+- Interpretation:
+  - Skew > 1: highly skewed (long-tail).
+  - Kurtosis > 0: leptokurtic distribution — heavier tails and more outliers than normal.
+- Recommendation: Consider log (or log1p), square root or Box-Cox transforms before using parametric models; use robust scaling or quantile transforms for ML algorithms that assume normal-like distributions.
+
+8) Distribution by cause_name (violin & boxen plots)
+----------------------------------------------------
+The notebook creates violin plots for numeric columns grouped by cause_name:
+```python
+cat = "cause_name"
+n_rows = 4
+n_cols = 2
+fig, axes = plt.subplots(n_rows, n_cols, figsize=(18,20)) 
+fig.suptitle(f"Distribution of Numerical Variables by {cat}", fontsize=16, y=1.02)
+for i, col in enumerate(num_cols):
+    row = i // n_cols
+    col_idx = i % n_cols
+    sns.violinplot(data=df, x=cat, y=col, ax=axes[row, col_idx], palette="viridis", inner="quartile", cut=0)
+    axes[row, col_idx].set_title(f"Distribution of {col}", fontsize=12)
+    axes[row, col_idx].set_xlabel(cat)
+plt.tight_layout()
+plt.show()
+```
+- A later cell uses boxenplot similarly.
+- The notebook prints a FutureWarning: "Passing `palette` without assigning `hue` is deprecated..." — this warning is cosmetic; to silence it, remove palette or use hue explicitly, e.g. sns.violinplot(..., palette=None).
+
+Interpretation from the notebook:
+- HIV/AIDS shows larger magnitudes in mean / upper / lower and much higher uncertainty (upper_deviation_pct) compared to causes such as Tuberculosis.
+- This suggests the HIV/AIDS group has extreme observations and larger relative uncertainty.
+
+---
+
+Interpretations & conclusions
+-----------------------------
+- mean, lower, and upper are essentially representing the same information (very high correlation). For modeling:
+  - Avoid including all three simultaneously.
+  - Use one (e.g., mean), or derive features (like width = upper - lower), or do dimensionality reduction (PCA), or apply regularized models (Ridge/Lasso).
+- Deaths vs Prevalence correlation is weak-to-moderate (~0.33). Prevalence only partially explains variation in deaths.
+- Several measurement variables are highly skewed and leptokurtic, indicating heavy tails and outliers. Consider transformations, robust statistics, or non-parametric methods.
+- Certain causes (notably HIV/AIDS) drive extreme values and uncertainty; cause-specific modeling may be preferred.
+
+Practical recommendations
+-------------------------
+- Data loading: use a repo-relative path and include the Excel in a data/ folder.
+- If building models, derive features (e.g. relative uncertainty ratios) and use cross-validation.
+- For variables with high skewness:
+  - Try log1p: df['mean_log'] = np.log1p(df['mean'])
+  - Use robust scalers (sklearn.preprocessing.RobustScaler) for models sensitive to outliers
+- For multicollinearity:
+  - Option A: Keep only one of correlated variables
+  - Option B: Use PCA on mean/lower/upper to get orthogonal components
+  - Option C: Use regularized regression (Ridge, Lasso, ElasticNet)
+- To summarize large numbers of causes: consider grouping rare causes under "Other" or selecting top-k causes for plots to avoid overplotting.
+
+Troubleshooting & common warnings
+---------------------------------
+- FileNotFoundError when reading Excel:
+  - Ensure the path is correct and file exists. Use relative path or place the Excel in the repository.
+- openpyxl or pandas read_excel error:
+  - Ensure openpyxl is installed (pip install openpyxl).
+- Seaborn FutureWarning about palette and hue:
+  - To silence: remove palette or set hue explicitly. The plots still render.
+- pivot_table producing NaN columns:
+  - Many index combinations might not have both Deaths and Prevalence. Drop NaNs before correlation:
+    pivot = pivot.dropna(subset=['Deaths','Prevalence'])
+- Large dataset memory issues:
+  - Use chunked reading or work with a sample when exploring.
+
+Saving plots & outputs
+----------------------
+- To save figures:
+```python
+plt.savefig("figures/corr_heatmap.png", dpi=300, bbox_inches='tight')
+```
+- To save a processed DataFrame:
+```python
+df.to_csv("data/processed_dataset.csv", index=False)
+```
+
+Appendix: useful code snippets
+------------------------------
+Read Excel (example):
+```python
+import pandas as pd
+df = pd.read_excel("data/Group_work_cleaned.xlsx", engine='openpyxl')
+```
+
+Compute correlation and plot heatmap:
+```python
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+corr = df[["mean","lower","upper"]].corr()
+plt.figure(figsize=(6,5))
+sns.heatmap(corr, annot=True, cmap="coolwarm", vmin=-1, vmax=1)
+plt.title("Correlogram")
+plt.show()
+```
+
+Pivot to compare metrics:
+```python
+pivot = df.pivot_table(
+    index=["location_name","year","age_group_name","sex_name","cause_name"],
+    columns="metric",
+    values="mean"
+).reset_index()
+
+pivot_clean = pivot.dropna(subset=["Deaths","Prevalence"])
+pivot_clean[["Deaths","Prevalence"]].corr()
+```
+
+Log-transform highly skewed column:
+```python
+import numpy as np
+df['mean_log1p'] = np.log1p(df['mean'])
+```
+
+Compute skewness & kurtosis:
+```python
+num_cols = df.select_dtypes(include='number').columns
+skews = df[num_cols].skew()
+kurts = df[num_cols].kurt()
+print(skews)
+print(kurts)
+```
+
+Plot grouped violin (avoid deprecation by not passing palette alone):
+```python
+plt.figure(figsize=(12,6))
+sns.violinplot(data=df, x='cause_name', y='mean', inner='quartile')
+plt.xticks(rotation=45)
+plt.tight_layout()
+plt.show()
+```
+
+Requirements snippet
+--------------------
+Add a file `requirements.txt` in the repo root with:
+```
+pandas
+numpy
+matplotlib
+seaborn
+openpyxl
+tabulate
+jupyterlab
+```
 ---
 ##  Data Mining
 **Team Member**: Aime
