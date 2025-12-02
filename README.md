@@ -102,6 +102,51 @@ Key steps performed:
 - Workflow: Load → Filter → Clean → Enrich → Export
 
 ---
+## Exploratory Data Analysis (EDA) Report  
+**Student Name:** Mitchelle Moraa  
+
+---
+
+## Overview  
+
+This project repo performs a comprehensive **Exploratory Data Analysis (EDA)** on a public health-related dataset titled `Group_work_cleaned.xlsx`. The analysis focuses on understanding the distribution, relationships, and uncertainty in key health metrics—particularly **Deaths** and **Prevalence**—associated with diseases such as **HIV/AIDS** and **Tuberculosis** across various demographics (age, sex), geographies (e.g., South Africa and other African nations), and time (years).
+
+The goal is to:
+- Load and validate data integrity
+- Assess correlations among numerical variables
+- Explore data distributions and identify skewness/kurtosis
+- Visualize uncertainty in estimates
+- Investigate disease patterns by age, sex, and location
+
+All analysis is implemented using Python with core data science libraries.
+
+---
+
+## Tools & Libraries Used  
+
+| Library       | Purpose |
+|---------------|--------|
+| `pandas`      | Data loading, cleaning, transformation, and manipulation |
+| `numpy`       | Numerical operations and array handling |
+| `matplotlib`  | Basic plotting and figure customization |
+| `seaborn`     | Advanced statistical visualizations (heatmaps, violin plots, KDEs, etc.) |
+| `openpyxl`    | Reading `.xlsx` Excel files |
+| `tabulate`    | Formatted table printing (installed but not actively used) |
+
+>  **Note**: Package installation commands (`!pip install`) confirm `openpyxl` and `tabulate` are available for file I/O and output formatting.
+
+---
+
+## Data Loading & Initial Inspection  
+
+```python
+df = pd.read_excel("C:/Users/USER/Downloads/Group_work_cleaned.xlsx")
+df.head()
+```
+
+
+
+---
 ##  Data Mining
 **Team Member**: Aime
 
