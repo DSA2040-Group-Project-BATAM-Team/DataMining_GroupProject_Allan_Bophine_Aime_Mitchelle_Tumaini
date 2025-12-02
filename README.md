@@ -130,139 +130,151 @@ The dataset contains global health metrics for Tuberculosis and HIV/AIDS from 20
 
 ---
 
-##  Setup & Dependencies
+## Overview
+Applied three complementary data mining techniques to uncover hidden patterns in global TB and HIV/AIDS disease burden data (2000-2013, ~78,000 records, 195 locations).
 
-### Required Python Libraries
-- `pandas` – Data manipulation
-- `numpy` – Numerical operations
-- `matplotlib`, `seaborn` – Visualization
-- `scikit-learn` – Clustering and classification
-- `mlxtend` – Association rule mining
-- `warnings` – Suppress non-critical alerts
+**Key Questions Answered:**
+- **WHO?** Which countries share similar disease burden profiles? (Clustering)
+- **WHAT?** What epidemiological patterns distinguish TB from HIV/AIDS? (Classification)
+- **WHEN?** How have disease burdens changed over time and what are future projections? (Time Series)
 
-### Installation
-Run the following in your terminal or notebook environment:
-```bash
-pip install pandas numpy matplotlib seaborn scikit-learn mlxtend
-```
+---
 
- ## Methodology Breakdown
- ### Data Preparation
-- Filter data into Deaths (63,742 records) and Prevalence (14,822 records)
-- Create an **aggregated location-level dataset** by grouping on `location_id` and cause_name
-- Compute average rates (`avg_mean`), uncertainty bounds, and record counts
-- Pivot the data to create separate columns for TB and HIV/AIDS metrics per location
-- Handle missing values by imputing 0 (indicating no reported cases/data)
+## Methodology
 
-Result: **49 locations** with numeric features suitable for clustering.
+### 1. K-Means Clustering
+**Objective:** Group countries by disease burden similarity to identify regions requiring different intervention strategies.
 
-## Technique 1: K-Means Clustering
-**Goal**: Discover natural groupings of countries based on disease burden profiles.
+**Features Engineered:**
+- TB/HIV mean death rates (per 100,000)
+- Temporal trends (deaths/year change)
+- Variability (standard deviation)
+- Disease ratio (HIV/TB burden)
 
-### Features Used
-- 'avg_mean_HIV/AIDS', 'avg_mean_Tuberculosis'
-- 'avg_upper_HIV/AIDS', 'avg_upper_Tuberculosis'
-- 'record_count_HIV/AIDS', 'record_count_Tuberculosis'
-  
-### Workflow
-1. Standardize all numeric features using StandardScaler
-2. Evaluate cluster quality using:
-- Elbow Method (inertia vs. k)
-- Silhouette Score (cohesion vs. separation)
-3. Select optimal k = 4 (highest silhouette score)
-4. Fit KMeans(n_clusters=4) and assign cluster labels
-5. Analyze and interpret each cluster
+**Process:**
+1. Aggregated age-standardized death rates by location
+2. Calculated trend slopes using linear regression
+3. Standardized features using StandardScaler
+4. Applied elbow method and silhouette analysis to determine optimal k
+5. Performed K-means clustering with k=2
 
-| Cluster | Average HIV Mean | Average TB Mean | Sample Countries |
-|---------|------------------|-----------------|------------------|
-| **0** | 1036.48 | 789.26 | Ethiopia, Kenya, South Africa, Zimbabwe |
-| **1** | 360.86 | 254.76 | Algeria, Egypt, Angola, Morocco |
-| **2** | 118.34 | 53.51 | Global, Libya, Tunisia, Seychelles |
-| **3** | 346.74 | 337.04 | Sudan, South Sudan |
+**Evaluation Metric:**
+- Silhouette Score: 0.441 (moderate cluster separation)
 
-> **Insight**: Cluster 0 represents the high dual-burden region (Sub-Saharan Africa), while Cluster 2 includes low-burden or global aggregate entries.
+<img width="1389" height="489" alt="image" src="https://github.com/user-attachments/assets/94981f77-d40d-476e-98c9-f26ec333a2ad" />
+*Figure 1: Optimal k determination using elbow method (left) and silhouette score (right)*
 
-### Visualization
-- Scatter plot of TB vs. HIV mean rates, colored by cluster
-- Clear separation between high, medium, and low burden regions
+<img width="1554" height="590" alt="image" src="https://github.com/user-attachments/assets/4d40d43e-43bc-4b8e-bd77-e811579e442b" />
+*Figure 2: Country clusters by disease burden (left) and temporal trends (right)*
 
-## Technique 2: Decision Tree Classification
-**Goal**: Predict whether a location belongs to the high disease burden group and identify decisive factors.
+---
 
-### Target Variable Construction
-- Compute overall `avg_death_rate` per location (age-standardized deaths/100k)
-- Define **high burden** as values above the **75th percentile** (~182.39)
-- Result: **12 high-burden**, **37 low-burden** locations
-  
-### Features
-- `tb_death_rate`: Avg TB death rate
-- `hiv_death_rate`: Avg HIV/AIDS death rate
-- `uncertainty_range`: avg_upper_bound – avg_lower_bound
-- `num_records`: Data completeness proxy
-  
-### Model Configuration
-- `DecisionTreeClassifier(max_depth=4, min_samples_split=10, min_samples_leaf=5)`
-- Stratified 70/30 train-test split
+### 2. Decision Tree Classification
+**Objective:** Predict disease type (TB vs HIV/AIDS) from epidemiological patterns to understand distinguishing characteristics.
 
-### Performance
-- **Test Accuracy: 100%** (due to small, well-separated classes)
-- **Classification Report**: Perfect precision, recall, and F1 for both classes
+**Features Used:**
+- Age group (encoded)
+- Sex (encoded)
+- Death rate magnitude
+- Uncertainty range (upper - lower bounds)
+- Relative uncertainty (uncertainty/mean)
+- Year (normalized 2000-2013)
 
-| Feature | Importance |
-|---------|------------------|
-| `hiv_death_rate` | 1.00 | 
-| All Others | 0.00 | 
-> **Key Insight**: HIV/AIDS mortality **alone** is sufficient to distinguish high-burden locations — TB rates do not provide additional discriminative power in this context.
+**Process:**
+1. Filtered death rate data (Rate per 100,000 unit)
+2. Encoded categorical variables
+3. Split data: 70% training (2,586 records), 30% testing (1,109 records)
+4. Trained Decision Tree with constraints:
+   - max_depth=3
+ 
+5. Evaluated on test set
 
-### Visualization
-- Bar plot of feature importance
-- Full decision tree diagram showing splits based exclusively on `hiv_death_rate`
+**Performance Metrics:**
+- **Overall Accuracy:** 72.3%
+- **Tuberculosis:** Precision=67%, Recall=91%, F1=77%
+- **HIV/AIDS:** Precision=84%, Recall=53%, F1=65%
 
-## Technique 3: Association Rule Mining (Apriori)
-**Goal**: Uncover frequent co-occurrences among disease, demographic, and temporal attributes.
+<img width="739" height="590" alt="image" src="https://github.com/user-attachments/assets/3b100c6d-8b03-4aa5-b08a-f25fcc4733fd" />
+*Figure 3: Classification confusion matrix showing prediction patterns*
 
-### Transaction Construction
-Each death record is converted into a market basket of categorical items:
+<img width="989" height="590" alt="image" src="https://github.com/user-attachments/assets/12824454-e839-4359-ad57-d819342793e5" />
+*Figure 4: Feature importance - Death Rate (47%) is primary differentiator*
 
-- Disease: Tuberculosis or HIV_AIDS
-- Sex: Sex_Males, Sex_Females, Sex_Both sexes
-- Age: Age_Age-standardized
-- Rate Category: Rate_Very_Low, Rate_Low, Rate_Medium, Rate_High (based on mean bins)
-- Time Period: Period_2000-2005, Period_2006-2010, Period_2011-2013
-Total transactions: 63,742
-Unique items: 31
+<img width="1990" height="1190" alt="image" src="https://github.com/user-attachments/assets/26bc1102-6954-463d-b57d-e25042111394" />
+*Figure 5: Decision tree structure (top 3 levels) showing key decision rules*
 
-### Algorithm Settings
-- min_support = 0.05 → rules must appear in ≥5% of transactions
-- min_confidence = 0.6 → rules must be ≥60% reliable
+---
 
-### Key Results
-- 105 frequent itemsets found
-- 6 strong association rules met confidence threshold
+### 3. Time Series Analysis
+**Objective:** Identify temporal trends and forecast future disease burden for resource planning.
 
-**Top Association Rules (by Lift)**
+**Approach:**
+1. **Trend Analysis:** Linear regression on global annual death totals
+2. **Forecasting:** Exponential smoothing (Holt's method) for 3-year projections
+3. **Evaluation:** Mean Absolute Percentage Error (MAPE)
 
-IF Rate_Medium → THEN Tuberculosis  
-  Support: 0.199 | Confidence: 0.619 | Lift: 1.14
+**Data Preparation:**
+- Aggregated all-ages, both-sexes death counts by year
+- Separated TB and HIV/AIDS time series
+- Calculated year-over-year percentage changes
 
-IF Sex_Males, Rate_Medium → THEN Tuberculosis  
-  Support: 0.073 | Confidence: 0.633 | Lift: 1.16
+**Forecast Performance:**
+- **TB:** MAPE = 3.98% (excellent accuracy)
+- **HIV/AIDS:** MAPE = 8.42% (good accuracy)
 
-IF Period_2000-2005, Rate_Medium → THEN Tuberculosis  
-  Support: 0.087 | Confidence: 0.630 | Lift: 1.16
-> **Interpretation**: Tuberculosis is strongly associated with medium mortality rates, particularly among males and in the early 2000s. No strong rules linked HIV/AIDS to specific demographic or temporal patterns, suggesting its burden is more uniformly distributed or extreme (high/low only).
+<img width="1389" height="990" alt="image" src="https://github.com/user-attachments/assets/04b6c18f-e6c1-4bcc-8428-86ff55910feb" />
+*Figure 6: Historical trends showing TB stability vs HIV increase*
 
-### Visualization
-- Scatter plots of **Support vs. Confidence** and **Support vs. Lift**
-- Color gradients show rule strength and reliability
+<img width="1590" height="590" alt="image" src="https://github.com/user-attachments/assets/cbeeb6bc-eeeb-4a30-821d-07649814f5db" />
+*Figure 7: 3-year forecasts (2014-2016) with historical context*
 
-## Key Insights Summary
-1. **Epidemiological Clusters Exist**: Countries naturally group into distinct burden profiles — especially a high dual-burden cluster in Sub-Saharan Africa.
-2. **HIV Drives High Burden Classification**: In this dataset, HIV/AIDS mortality is the sole predictor of whether a location is classified as "high burden."
-3. **TB Shows Endemic Patterns**: Tuberculosis consistently appears in medium-rate contexts across genders and time periods, indicating persistent transmission even without epidemic-level spikes.
-4. **Data Completeness Varies**: Record counts differ widely by country and disease, which was accounted for in feature engineering.
+---
 
+## Key Findings
 
+### 1. Clustering Results
+**Two distinct country clusters identified:**
+
+| Cluster | Countries (n) | TB Rate | HIV Rate | Trend | Examples |
+|---------|---------------|---------|----------|-------|----------|
+| 0 (Low-Moderate) | 32 | 59.4 | 76.1 | Declining | Tanzania, Cameroon |
+| 1 (High Burden) | 17 | 134.5 | 394.2 | Steep decline | Zimbabwe, Lesotho |
+
+**Insight:** Cluster 1 countries (mostly Southern Africa) have 5x higher HIV burden than Cluster 0, reflecting generalized HIV epidemics. Despite higher burden, these countries show steeper declining trends, suggesting effective intervention scale-up.
+
+---
+
+### 2. Classification Results
+**Disease signatures learned by decision tree:**
+
+**Most Important Features:**
+1. **Death Rate (47%):** HIV/AIDS typically has higher rates in epidemic regions (threshold: ~215/100k)
+2. **Relative Uncertainty (25%):** HIV data has higher uncertainty due to surveillance challenges
+3. **Uncertainty Range (18%):** Reflects epidemiological confidence differences
+4. **Year (8%):** Captures temporal changes in disease dynamics
+
+**Model Behavior:**
+- **Conservative on HIV prediction:** High precision (84%) but misses some cases (53% recall)
+- **Aggressive on TB prediction:** Catches most cases (91% recall) but some false positives (67% precision)
+
+**Insight:** The tree effectively learned that very high death rates (>215/100k) strongly indicate HIV/AIDS, particularly in Southern African epidemic settings.
+
+---
+
+### 3. Time Series Results
+**Contrasting epidemic trajectories:**
+
+| Disease | Trend | R² | 2000 Deaths | 2013 Deaths | 2016 Forecast |
+|---------|-------|-----|-------------|-------------|---------------|
+| **TB** | +68/year | 0.032 (weak) | 21,101 | 19,672 | 19,358 |
+| **HIV/AIDS** | +321/year | 0.533 (strong) | 9,811 | 15,004 | 15,686 |
+
+**Key Patterns:**
+- **TB:** Stable endemic burden with fluctuations, no clear directional trend
+- **HIV/AIDS:** Strong upward trend (53% increase 2000→2013) with high volatility
+- **Forecasts:** TB expected to remain stable; HIV projected to continue rising without major interventions
+
+**Insight:** TB represents a persistent, stable endemic problem requiring sustained control. HIV/AIDS showed ongoing epidemic expansion in the study period, necessitating aggressive intervention scale-up (which did occur post-2013 with treatment expansion).
 
 ---
 ## Insights & Storytelling
